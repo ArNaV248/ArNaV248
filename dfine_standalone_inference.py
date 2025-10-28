@@ -1453,22 +1453,27 @@ def preprocess_image(image_path: str, target_size: Tuple[int, int] = INPUT_SIZE)
     original_size = image.size
     image_resized = image.resize(target_size, Image.BILINEAR)
 
-    # CRITICAL: Apply ImageNet normalization (required for pretrained models)
-    # Mean and Std from ImageNet dataset
-    transform = T.Compose([
-        T.ToTensor(),
-        T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
+    # OPTION 1: No normalization (just convert to tensor)
+    # Use this if your working script doesn't normalize
+    transform = T.Compose([T.ToTensor()])
     tensor = transform(image_resized).unsqueeze(0)
 
-    # DIAGNOSTIC: Verify normalization was applied correctly
+    # OPTION 2: With ImageNet normalization (commented out for now)
+    # Uncomment if your working script uses normalization
+    # transform = T.Compose([
+    #     T.ToTensor(),
+    #     T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    # ])
+    # tensor = transform(image_resized).unsqueeze(0)
+
+    # DIAGNOSTIC: Verify tensor range
     tensor_min = tensor.min().item()
     tensor_max = tensor.max().item()
     tensor_mean = tensor.mean().item()
 
-    print(f"[Preprocessing] Image resized to {target_size}, normalized with ImageNet mean/std")
+    print(f"[Preprocessing] Image resized to {target_size}")
     print(f"[Preprocessing] Tensor stats - min: {tensor_min:.3f}, max: {tensor_max:.3f}, mean: {tensor_mean:.3f}")
-    print(f"[Preprocessing] Expected range: ~[-2.0, 2.5] if normalized correctly")
+    print(f"[Preprocessing] Range: [0, 1] = NO normalization, [-2, 2.5] = WITH normalization")
 
     return tensor, image, original_size
 
