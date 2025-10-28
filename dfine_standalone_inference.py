@@ -1922,7 +1922,8 @@ Examples:
     print()
 
     print("\n[Model] Building D-FINE model...")
-    model = build_model(MODEL_NAME, NUM_CLASSES, device, INPUT_SIZE)
+    # CRITICAL: Pass None for img_size to match working script (eval_spatial_size = None)
+    model = build_model(MODEL_NAME, NUM_CLASSES, device, None)
     model = load_checkpoint(model, args.model)
     model.eval()
     print("[Model] Model ready for inference\n")
