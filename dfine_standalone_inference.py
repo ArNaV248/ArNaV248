@@ -1381,14 +1381,80 @@ def build_model(model_name, num_classes, device, img_size=None):
     return model.to(device)
 
 
+def map_class_weights(cur_tensor, pretrain_tensor):
+    """Map class weights from pretrain model to current model based on class IDs."""
+    if pretrain_tensor.size() == cur_tensor.size():
+        return pretrain_tensor
+
+    # If sizes don't match, just return current tensor (keep initialized weights)
+    # The original function uses obj365_ids mapping which is dataset-specific
+    # For our case, if sizes match we use pretrained weights, otherwise keep current
+    print(f"[Warning] Weight size mismatch: pretrain {pretrain_tensor.size()} vs current {cur_tensor.size()}")
+    return None
+
+
+def matched_state(state: Dict[str, torch.Tensor], params: Dict[str, torch.Tensor]):
+    """Filter state dict to only include matching parameters."""
+    missed_list = []
+    unmatched_list = []
+    matched_state_dict = {}
+    for k, v in state.items():
+        if k in params:
+            if v.shape == params[k].shape:
+                matched_state_dict[k] = params[k]
+            else:
+                unmatched_list.append(k)
+        else:
+            missed_list.append(k)
+
+    return matched_state_dict, {"missed": missed_list, "unmatched": unmatched_list}
+
+
+def adjust_head_parameters(cur_state_dict, pretrain_state_dict):
+    """Adjust head parameters between datasets."""
+    # Remove denoising_class_embed if size mismatch
+    if (
+        "decoder.denoising_class_embed.weight" in pretrain_state_dict
+        and "decoder.denoising_class_embed.weight" in cur_state_dict
+        and pretrain_state_dict["decoder.denoising_class_embed.weight"].size()
+        != cur_state_dict["decoder.denoising_class_embed.weight"].size()
+    ):
+        del pretrain_state_dict["decoder.denoising_class_embed.weight"]
+
+    # List of head parameters to adjust
+    head_param_names = ["decoder.enc_score_head.weight", "decoder.enc_score_head.bias"]
+    for i in range(8):
+        head_param_names.append(f"decoder.dec_score_head.{i}.weight")
+        head_param_names.append(f"decoder.dec_score_head.{i}.bias")
+
+    adjusted_params = []
+
+    for param_name in head_param_names:
+        if param_name in cur_state_dict and param_name in pretrain_state_dict:
+            cur_tensor = cur_state_dict[param_name]
+            pretrain_tensor = pretrain_state_dict[param_name]
+            adjusted_tensor = map_class_weights(cur_tensor, pretrain_tensor)
+            if adjusted_tensor is not None:
+                pretrain_state_dict[param_name] = adjusted_tensor
+                adjusted_params.append(param_name)
+            else:
+                print(f"[Warning] Cannot adjust parameter '{param_name}' due to size mismatch.")
+
+    if adjusted_params:
+        print(f"[Model] Adjusted {len(adjusted_params)} head parameters")
+
+    return pretrain_state_dict
+
+
 def load_checkpoint(model, checkpoint_path):
+    """Load checkpoint with proper head parameter adjustment (matches working script)."""
     if not os.path.exists(checkpoint_path):
         raise FileNotFoundError(f"Model checkpoint not found: {checkpoint_path}")
 
     print(f"[Model] Loading checkpoint from: {checkpoint_path}")
     checkpoint = torch.load(checkpoint_path, map_location='cpu')
 
-    # Detect checkpoint format
+    # Detect checkpoint format and extract state_dict
     checkpoint_type = "unknown"
     if isinstance(checkpoint, dict):
         if 'ema' in checkpoint:
@@ -1409,7 +1475,21 @@ def load_checkpoint(model, checkpoint_path):
 
     print(f"[Model] Checkpoint type: {checkpoint_type}")
 
-    missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
+    # CRITICAL FIX: Adjust head parameters (this was missing!)
+    # This matches the working script's load_tuning_state() function
+    try:
+        adjusted_state_dict = adjust_head_parameters(model.state_dict(), state_dict)
+        matched_dict, infos = matched_state(model.state_dict(), adjusted_state_dict)
+        state_dict_to_load = matched_dict
+        print(f"[Model] Applied head parameter adjustment (matches working script)")
+    except Exception as e:
+        print(f"[Warning] Head adjustment failed: {e}")
+        print(f"[Model] Falling back to direct state dict loading")
+        matched_dict, infos = matched_state(model.state_dict(), state_dict)
+        state_dict_to_load = matched_dict
+
+    # Load the adjusted state dict
+    missing_keys, unexpected_keys = model.load_state_dict(state_dict_to_load, strict=False)
 
     if missing_keys:
         print(f"[Warning] Missing {len(missing_keys)} keys (may affect performance)")
