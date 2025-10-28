@@ -1662,6 +1662,27 @@ def process_single_image(model, device, image_path: str, output_dir: str, confid
 
     image_tensor, original_image, original_size = preprocess_image(image_path, INPUT_SIZE)
     outputs = run_inference(model, image_tensor, device)
+
+    # DIAGNOSTIC: Save raw model logits for comparison
+    pred_logits = outputs['pred_logits']
+    if isinstance(pred_logits, (list, tuple)):
+        pred_logits = pred_logits[-1]
+    pred_logits_cpu = pred_logits[0].cpu()  # [num_queries, num_classes]
+
+    image_name = os.path.basename(image_path)
+    base_name = os.path.splitext(image_name)[0]
+    logits_path = os.path.join(output_dir, f"logits_{base_name}.pt")
+    torch.save({
+        'logits': pred_logits_cpu,
+        'shape': pred_logits_cpu.shape,
+        'image': image_name,
+        'first_query_logits': pred_logits_cpu[0, :].tolist(),  # First query, all classes
+        'first_10_queries_first_10_classes': pred_logits_cpu[:10, :10].tolist()  # First 10 queries, first 10 classes
+    }, logits_path)
+    print(f"[Diagnostic] Saved raw logits to: {logits_path}")
+    print(f"[Diagnostic] Logits shape: {pred_logits_cpu.shape}")
+    print(f"[Diagnostic] First query, first 10 class logits: {pred_logits_cpu[0, :10].tolist()}")
+
     boxes, scores, labels = postprocess_outputs(outputs, original_size, confidence_threshold, nms_threshold)
 
     print(f"\n[Results] Final detections: {len(boxes)} objects")
