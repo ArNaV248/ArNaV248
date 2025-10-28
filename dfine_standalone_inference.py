@@ -1498,8 +1498,22 @@ def visualize_detections(image_path: str, boxes: np.ndarray, scores: np.ndarray,
         except:
             font = ImageFont.load_default()
 
+    valid_count = 0
     for box, score, label in zip(boxes, scores, labels):
         x1, y1, x2, y2 = box
+
+        # Fix invalid boxes: ensure x1 < x2 and y1 < y2
+        if x1 > x2:
+            x1, x2 = x2, x1
+        if y1 > y2:
+            y1, y2 = y2, y1
+
+        # Skip boxes with zero or negative width/height
+        if x2 <= x1 or y2 <= y1:
+            continue
+
+        valid_count += 1
+
         draw.rectangle([x1, y1, x2, y2], outline='red', width=3)
         class_name = CLASS_NAMES[int(label)] if int(label) < len(CLASS_NAMES) else f"Class_{int(label)}"
         text = f"{class_name}: {score:.2f}"  # Show as decimal (0.00)
@@ -1511,18 +1525,34 @@ def visualize_detections(image_path: str, boxes: np.ndarray, scores: np.ndarray,
             draw.text((x1, y1 - 20), text, fill='yellow', font=font)
 
     image.save(output_path)
-    print(f"[Output] Saved visualization: {output_path}")
+
+    if valid_count < len(boxes):
+        print(f"[Output] Saved visualization: {output_path} ({valid_count}/{len(boxes)} valid boxes drawn, {len(boxes) - valid_count} invalid boxes skipped)")
+    else:
+        print(f"[Output] Saved visualization: {output_path}")
 
 
 def save_json_output(image_name: str, boxes: np.ndarray, scores: np.ndarray, labels: np.ndarray, output_path: str):
     detections = []
     for box, score, label in zip(boxes, scores, labels):
+        x1, y1, x2, y2 = box
+
+        # Fix invalid boxes
+        if x1 > x2:
+            x1, x2 = x2, x1
+        if y1 > y2:
+            y1, y2 = y2, y1
+
+        # Skip invalid boxes
+        if x2 <= x1 or y2 <= y1:
+            continue
+
         class_name = CLASS_NAMES[int(label)] if int(label) < len(CLASS_NAMES) else f"Class_{int(label)}"
         detection = {
             "class": class_name,
             "class_id": int(label),
             "confidence": float(score),
-            "bbox": {"x1": float(box[0]), "y1": float(box[1]), "x2": float(box[2]), "y2": float(box[3])}
+            "bbox": {"x1": float(x1), "y1": float(y1), "x2": float(x2), "y2": float(y2)}
         }
         detections.append(detection)
 
@@ -1554,9 +1584,23 @@ def process_single_image(model, device, image_path: str, output_dir: str, confid
 
     if len(boxes) > 0:
         print(f"\nDetections:")
-        for i, (box, score, label) in enumerate(zip(boxes, scores, labels), 1):
+        valid_idx = 0
+        for box, score, label in zip(boxes, scores, labels):
+            x1, y1, x2, y2 = box
+
+            # Fix invalid boxes
+            if x1 > x2:
+                x1, x2 = x2, x1
+            if y1 > y2:
+                y1, y2 = y2, y1
+
+            # Skip invalid boxes
+            if x2 <= x1 or y2 <= y1:
+                continue
+
+            valid_idx += 1
             class_name = CLASS_NAMES[int(label)]
-            print(f"  {i}. {class_name}: {score:.2f} at [{box[0]:.1f}, {box[1]:.1f}, {box[2]:.1f}, {box[3]:.1f}]")
+            print(f"  {valid_idx}. {class_name}: {score:.2f} at [{x1:.1f}, {y1:.1f}, {x2:.1f}, {y2:.1f}]")
     else:
         print("\n⚠️  No detections found!")
         print("\n💡 Troubleshooting tips:")
