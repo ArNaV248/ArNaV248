@@ -1,0 +1,33 @@
+═══════════════════════════════════════════════════════════════════
+ADD THIS CODE RIGHT AFTER: preds = pipeline.predict(tensor)
+═══════════════════════════════════════════════════════════════════
+
+        # DIAGNOSTIC CODE - SAVE RAW LOGITS FOR COMPARISON
+        pred_logits = preds['pred_logits']
+        if isinstance(pred_logits, (list, tuple)):
+            pred_logits = pred_logits[-1]
+
+        pred_logits_cpu = pred_logits[0].cpu()  # [num_queries, num_classes]
+
+        # Get image name
+        image_basename = img_file.name
+        base_name = img_file.stem
+        output_file = f"logits_working_{base_name}.pt"
+
+        torch.save({
+            'logits': pred_logits_cpu,
+            'shape': pred_logits_cpu.shape,
+            'image': image_basename,
+            'first_query_logits': pred_logits_cpu[0, :].tolist(),
+            'first_10_queries_first_10_classes': pred_logits_cpu[:10, :10].tolist()
+        }, output_file)
+
+        print(f"\n{'='*70}")
+        print(f"✅ SAVED RAW LOGITS TO: {output_file}")
+        print(f"   Full path: {os.path.abspath(output_file)}")
+        print(f"   Logits shape: {pred_logits_cpu.shape}")
+        print(f"   First query, first 10 class logits: {pred_logits_cpu[0, :10].tolist()}")
+        print(f"{'='*70}\n")
+        # END DIAGNOSTIC CODE
+
+═══════════════════════════════════════════════════════════════════
