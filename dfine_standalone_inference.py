@@ -1547,12 +1547,13 @@ def save_json_output(image_name: str, boxes: np.ndarray, scores: np.ndarray, lab
 
 def process_single_image(model, device, image_path: str, output_dir: str, confidence_threshold: float, nms_threshold: float, save_vis: bool = True, save_json_out: bool = True):
     print(f"\n[Processing] {image_path}")
+    print(f"[Settings] Confidence: {confidence_threshold:.2f} | NMS: {nms_threshold:.2f}")
 
     image_tensor, original_image, original_size = preprocess_image(image_path, INPUT_SIZE)
     outputs = run_inference(model, image_tensor, device)
     boxes, scores, labels = postprocess_outputs(outputs, original_size, confidence_threshold, nms_threshold)
 
-    print(f"[Results] Found {len(boxes)} detections")
+    print(f"[Results] Found {len(boxes)} detections (after confidence filter + NMS)")
 
     image_name = os.path.basename(image_path)
     base_name = os.path.splitext(image_name)[0]
@@ -1576,14 +1577,18 @@ def process_single_image(model, device, image_path: str, output_dir: str, confid
 
             class_name = CLASS_NAMES[int(label)]
             print(f"  {i}. {class_name}: {score:.2f} at [{x1:.1f}, {y1:.1f}, {x2:.1f}, {y2:.1f}]")
+
+        print(f"\n💡 Missing some objects? Try:")
+        print(f"   - Lower confidence: --conf 0.01 (shows more objects)")
+        print(f"   - Lower NMS: --nms 0.2 (keeps more overlapping boxes)")
     else:
         print("\n⚠️  No detections found!")
         print("\n💡 Troubleshooting tips:")
-        print("   1. Try MUCH lower confidence (0.05 or 0.10)")
-        print("   2. Check if model file is correct: /Users/borde/arnav/model_2.pt")
-        print("   3. Verify image contains objects the model was trained on")
-        print("   4. Try with a different image to test the model")
-        print(f"\n   Re-run with: python3 dfine_standalone_inference.py --input {image_path} --conf 0.05")
+        print("   1. Try MUCH lower confidence: 0.01 or 0.05")
+        print("   2. Try lower NMS threshold: 0.2 or 0.3 (keeps more boxes)")
+        print("   3. Check if model file is correct: /Users/borde/arnav/model_2.pt")
+        print("   4. Verify image contains objects the model was trained on")
+        print(f"\n   Re-run with: python3 dfine_standalone_inference.py --input {image_path} --conf 0.01 --nms 0.2")
 
 
 def process_directory(model, device, input_dir: str, output_dir: str, confidence_threshold: float, nms_threshold: float, save_vis: bool = True, save_json_out: bool = True):
