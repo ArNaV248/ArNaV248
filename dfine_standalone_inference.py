@@ -1467,7 +1467,11 @@ def preprocess_image(image_path: str, target_size: Tuple[int, int] = INPUT_SIZE)
     ])
     tensor = transform(image).unsqueeze(0)
 
-    print(f"[Preprocessing] Using T.Resize({resize_hw}) + ToTensor() - matches working script")
+    print(f"[Preprocessing] Original image size: {original_size} (W x H)")
+    print(f"[Preprocessing] Using T.Resize({resize_hw}) = (H x W)")
+    print(f"[Preprocessing] Output tensor shape: {tensor.shape} (B, C, H, W)")
+    print(f"[Preprocessing] Tensor range: [{tensor.min().item():.3f}, {tensor.max().item():.3f}]")
+
     return tensor, image, original_size
 
 
@@ -1507,6 +1511,21 @@ def postprocess_outputs(outputs: Dict, original_size: Tuple[int, int], confidenc
     if verbose:
         print(f"[Diagnostic] Using SOFTMAX on all classes (matches working script)")
         print(f"[Diagnostic] Total detection queries: {total_queries}")
+
+        # Show score statistics BEFORE filtering
+        print(f"\n[Diagnostic] Score statistics (before filtering):")
+        print(f"             Min score: {max_scores.min().item():.6f}")
+        print(f"             Max score: {max_scores.max().item():.6f}")
+        print(f"             Mean score: {max_scores.mean().item():.6f}")
+
+        # Count how many scores are exactly 0.10
+        scores_at_010 = (torch.abs(max_scores - 0.10) < 0.001).sum().item()
+        if scores_at_010 > 0:
+            print(f"             ⚠️  {scores_at_010} scores are exactly ~0.10 (suspicious!)")
+
+        # Show top 20 scores
+        sorted_scores, _ = torch.sort(max_scores, descending=True)
+        print(f"             Top 20 scores: {sorted_scores[:20].cpu().numpy()}")
 
         # Show confidence score distribution BEFORE filtering
         sorted_scores, _ = torch.sort(max_scores, descending=True)
