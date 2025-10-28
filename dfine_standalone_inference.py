@@ -1446,7 +1446,7 @@ def run_inference(model, image_tensor, device):
     return outputs
 
 
-def postprocess_outputs(outputs: Dict, original_size: Tuple[int, int], confidence_threshold: float = 0.3, nms_threshold: float = 0.5):
+def postprocess_outputs(outputs: Dict, original_size: Tuple[int, int], confidence_threshold: float = 0.3, nms_threshold: float = 0.5, verbose: bool = True):
     pred_logits = outputs['pred_logits']
     pred_boxes = outputs['pred_boxes']
 
@@ -1461,7 +1461,17 @@ def postprocess_outputs(outputs: Dict, original_size: Tuple[int, int], confidenc
     scores = F.softmax(pred_logits, dim=-1)
     max_scores, labels = scores.max(dim=-1)
 
+    # DIAGNOSTIC: Show raw model outputs
+    total_queries = len(pred_logits)
+    if verbose:
+        print(f"[Diagnostic] Raw model outputs: {total_queries} queries from model")
+
     keep_mask = max_scores > confidence_threshold
+    num_after_conf = keep_mask.sum().item()
+
+    if verbose:
+        print(f"[Diagnostic] After confidence filter (>= {confidence_threshold:.2f}): {num_after_conf} detections")
+
     if keep_mask.sum() == 0:
         return np.array([]), np.array([]), np.array([])
 
@@ -1482,6 +1492,22 @@ def postprocess_outputs(outputs: Dict, original_size: Tuple[int, int], confidenc
     final_boxes = boxes_xyxy[keep_indices].numpy()
     final_scores = filtered_scores[keep_indices].cpu().numpy()
     final_labels = filtered_labels[keep_indices].cpu().numpy()
+
+    # DIAGNOSTIC: Show NMS results and class distribution
+    if verbose:
+        num_after_nms = len(final_boxes)
+        num_removed_by_nms = num_after_conf - num_after_nms
+        print(f"[Diagnostic] After NMS (threshold {nms_threshold:.2f}): {num_after_nms} detections")
+        if num_removed_by_nms > 0:
+            print(f"[Diagnostic] NMS removed {num_removed_by_nms} overlapping boxes")
+
+        # Show class distribution
+        if len(final_labels) > 0:
+            unique_labels, counts = np.unique(final_labels, return_counts=True)
+            print(f"[Diagnostic] Detected classes:")
+            for label, count in zip(unique_labels, counts):
+                class_name = CLASS_NAMES[int(label)] if int(label) < len(CLASS_NAMES) else f"Class_{int(label)}"
+                print(f"             - {class_name}: {count} objects")
 
     return final_boxes, final_scores, final_labels
 
@@ -1553,7 +1579,7 @@ def process_single_image(model, device, image_path: str, output_dir: str, confid
     outputs = run_inference(model, image_tensor, device)
     boxes, scores, labels = postprocess_outputs(outputs, original_size, confidence_threshold, nms_threshold)
 
-    print(f"[Results] Found {len(boxes)} detections (after confidence filter + NMS)")
+    print(f"\n[Results] Final detections: {len(boxes)} objects")
 
     image_name = os.path.basename(image_path)
     base_name = os.path.splitext(image_name)[0]
