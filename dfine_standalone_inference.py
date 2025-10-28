@@ -1388,25 +1388,43 @@ def load_checkpoint(model, checkpoint_path):
     print(f"[Model] Loading checkpoint from: {checkpoint_path}")
     checkpoint = torch.load(checkpoint_path, map_location='cpu')
 
+    # Detect checkpoint format
+    checkpoint_type = "unknown"
     if isinstance(checkpoint, dict):
         if 'ema' in checkpoint:
             state_dict = checkpoint['ema']['module']
+            checkpoint_type = "EMA"
         elif 'model' in checkpoint:
             state_dict = checkpoint['model']
+            checkpoint_type = "model"
         elif 'state_dict' in checkpoint:
             state_dict = checkpoint['state_dict']
+            checkpoint_type = "state_dict"
         else:
             state_dict = checkpoint
+            checkpoint_type = "dict"
     else:
         state_dict = checkpoint
+        checkpoint_type = "raw"
+
+    print(f"[Model] Checkpoint type: {checkpoint_type}")
 
     missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
-    
-    if missing_keys:
-        print(f"[Warning] Missing keys: {len(missing_keys)}")
-    if unexpected_keys:
-        print(f"[Warning] Unexpected keys: {len(unexpected_keys)}")
 
+    if missing_keys:
+        print(f"[Warning] Missing {len(missing_keys)} keys (may affect performance)")
+        if len(missing_keys) <= 5:
+            for key in missing_keys:
+                print(f"          - {key}")
+    if unexpected_keys:
+        print(f"[Warning] Unexpected {len(unexpected_keys)} keys")
+        if len(unexpected_keys) <= 5:
+            for key in unexpected_keys:
+                print(f"          - {key}")
+
+    # CRITICAL: Set model to evaluation mode
+    model.eval()
+    print("[Model] Set to evaluation mode (model.eval())")
     print("[Model] Checkpoint loaded successfully")
     return model
 
@@ -1434,8 +1452,16 @@ def preprocess_image(image_path: str, target_size: Tuple[int, int] = INPUT_SIZE)
     image = Image.open(image_path).convert('RGB')
     original_size = image.size
     image_resized = image.resize(target_size, Image.BILINEAR)
-    transform = T.Compose([T.ToTensor()])
+
+    # CRITICAL: Apply ImageNet normalization (required for pretrained models)
+    # Mean and Std from ImageNet dataset
+    transform = T.Compose([
+        T.ToTensor(),
+        T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    ])
     tensor = transform(image_resized).unsqueeze(0)
+
+    print(f"[Preprocessing] Image resized to {target_size}, normalized with ImageNet mean/std")
     return tensor, image, original_size
 
 
