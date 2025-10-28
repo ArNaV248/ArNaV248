@@ -1502,7 +1502,7 @@ def visualize_detections(image_path: str, boxes: np.ndarray, scores: np.ndarray,
         x1, y1, x2, y2 = box
         draw.rectangle([x1, y1, x2, y2], outline='red', width=3)
         class_name = CLASS_NAMES[int(label)] if int(label) < len(CLASS_NAMES) else f"Class_{int(label)}"
-        text = f"{class_name}: {score:.3f}"  # Show as decimal (0.0-1.0)
+        text = f"{class_name}: {score:.2f}"  # Show as decimal (0.00)
         try:
             bbox = draw.textbbox((x1, y1 - 20), text, font=font)
             draw.rectangle(bbox, fill='red')
@@ -1556,7 +1556,15 @@ def process_single_image(model, device, image_path: str, output_dir: str, confid
         print(f"\nDetections:")
         for i, (box, score, label) in enumerate(zip(boxes, scores, labels), 1):
             class_name = CLASS_NAMES[int(label)]
-            print(f"  {i}. {class_name}: {score:.3f} at [{box[0]:.1f}, {box[1]:.1f}, {box[2]:.1f}, {box[3]:.1f}]")
+            print(f"  {i}. {class_name}: {score:.2f} at [{box[0]:.1f}, {box[1]:.1f}, {box[2]:.1f}, {box[3]:.1f}]")
+    else:
+        print("\n⚠️  No detections found!")
+        print("\n💡 Troubleshooting tips:")
+        print("   1. Try MUCH lower confidence (0.05 or 0.10)")
+        print("   2. Check if model file is correct: /Users/borde/arnav/model_2.pt")
+        print("   3. Verify image contains objects the model was trained on")
+        print("   4. Try with a different image to test the model")
+        print(f"\n   Re-run with: python3 dfine_standalone_inference.py --input {image_path} --conf 0.05")
 
 
 def process_directory(model, device, input_dir: str, output_dir: str, confidence_threshold: float, nms_threshold: float, save_vis: bool = True, save_json_out: bool = True):
@@ -1634,12 +1642,16 @@ Examples:
     # Ask for confidence threshold if not provided
     if args.conf is None:
         print("\n🎯 Confidence threshold (0.0 to 1.0):")
-        print("   - 0.1-0.2: Maximum detections (use if objects are missing)")
-        print("   - 0.3:     Balanced (recommended for most cases)")
-        print("   - 0.5+:    Only very confident detections")
-        print("\n   💡 Tip: If objects are not detected, try lower values like 0.1 or 0.15")
+        print("   - 0.05-0.10: VERY LOW - Maximum detections (many false positives)")
+        print("   - 0.15-0.20: LOW - More detections (some false positives)")
+        print("   - 0.30:      MEDIUM - Balanced (recommended)")
+        print("   - 0.50+:     HIGH - Only very confident detections")
+        print("\n   ⚠️  Objects missing? Try these in order:")
+        print("       1. Start with 0.10 (shows almost everything)")
+        print("       2. If too many false positives, increase to 0.15")
+        print("       3. Gradually increase until you find the sweet spot")
         print()
-        conf_input = input("Enter confidence threshold [default: 0.3]: ").strip()
+        conf_input = input("Enter confidence threshold [default: 0.30]: ").strip()
 
         if conf_input:
             try:
