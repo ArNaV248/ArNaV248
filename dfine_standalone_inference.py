@@ -1482,7 +1482,7 @@ def run_inference(model, image_tensor, device):
     return outputs
 
 
-def postprocess_outputs(outputs: Dict, original_size: Tuple[int, int], confidence_threshold: float = 0.3, nms_threshold: float = 0.3, verbose: bool = True):
+def postprocess_outputs(outputs: Dict, original_size: Tuple[int, int], confidence_threshold: float = 0.3, nms_threshold: float = 1.0, verbose: bool = True):
     pred_logits = outputs['pred_logits']
     pred_boxes = outputs['pred_boxes']
 
@@ -1689,17 +1689,17 @@ def process_single_image(model, device, image_path: str, output_dir: str, confid
             class_name = CLASS_NAMES[int(label)]
             print(f"  {i}. {class_name}: {score:.2f} at [{x1:.1f}, {y1:.1f}, {x2:.1f}, {y2:.1f}]")
 
-        print(f"\n💡 Missing some objects? Try:")
-        print(f"   - Lower confidence: --conf 0.01 (shows more objects)")
-        print(f"   - Lower NMS: --nms 0.2 (keeps more overlapping boxes)")
+        print(f"\n💡 Tips:")
+        print(f"   - Too many unwanted boxes? Increase confidence: --conf 0.5")
+        print(f"   - Duplicate boxes on same object? Enable NMS: --nms 0.5 or --nms 0.3")
+        print(f"   - Missing objects? Lower confidence: --conf 0.1")
     else:
         print("\n⚠️  No detections found!")
         print("\n💡 Troubleshooting tips:")
         print("   1. Try MUCH lower confidence: 0.01 or 0.05")
-        print("   2. Try lower NMS threshold: 0.2 or 0.3 (keeps more boxes)")
-        print("   3. Check if model file is correct: /Users/borde/arnav/model_2.pt")
-        print("   4. Verify image contains objects the model was trained on")
-        print(f"\n   Re-run with: python3 dfine_standalone_inference.py --input {image_path} --conf 0.01 --nms 0.2")
+        print("   2. Check if model file is correct: /Users/borde/arnav/model_2.pt")
+        print("   3. Verify image contains objects the model was trained on")
+        print(f"\n   Re-run with: python3 dfine_standalone_inference.py --input {image_path} --conf 0.01")
 
 
 def process_directory(model, device, input_dir: str, output_dir: str, confidence_threshold: float, nms_threshold: float, save_vis: bool = True, save_json_out: bool = True):
@@ -1745,7 +1745,7 @@ Examples:
     parser.add_argument('--input', '-i', type=str, required=False, help='Path to input image or directory')
     parser.add_argument('--output', '-o', type=str, default='output', help='Output directory (default: output)')
     parser.add_argument('--conf', '-c', type=float, default=None, help='Confidence threshold (default: 0.3)')
-    parser.add_argument('--nms', '-n', type=float, default=0.3, help='NMS IoU threshold (default: 0.3, lower = keep more boxes)')
+    parser.add_argument('--nms', '-n', type=float, default=1.0, help='NMS IoU threshold (default: 1.0 = disabled, lower = remove more overlapping boxes)')
     parser.add_argument('--model', '-m', type=str, default=MODEL_PATH, help=f'Path to model checkpoint (default: {MODEL_PATH})')
     parser.add_argument('--no-vis', action='store_true', help='Skip saving visualizations')
     parser.add_argument('--no-json', action='store_true', help='Skip saving JSON outputs')
