@@ -46,7 +46,16 @@ import numpy as np
 # CONFIGURATION
 # ==============================================================================
 
-MODEL_PATH = "model_2.pt"  # Default model path (same directory as script)
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║  🔧 MODEL PATH - CHANGE THIS WHEN COPYING TO ANOTHER LOCATION           ║
+# ║  Default: /Users/borde/arnav/model_2.pt                                 ║
+# ║  If you copy this script elsewhere, update the path below:               ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
+
+MODEL_PATH = "/Users/borde/arnav/model_2.pt"  # ← CHANGE THIS PATH IF NEEDED
+
+# ═══════════════════════════════════════════════════════════════════════════
+
 MODEL_NAME = "l"  # DFINE-Large
 INPUT_SIZE = (1280, 448)  # width, height
 NUM_CLASSES = 35
@@ -1580,15 +1589,19 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  # Interactive mode (no arguments)
+  python dfine_standalone_inference.py
+
+  # Command-line mode
   python dfine_standalone_inference.py --input image.jpg --conf 0.3
   python dfine_standalone_inference.py --input /path/to/images/ --conf 0.3 --nms 0.5
   python dfine_standalone_inference.py --input image.jpg --model /path/to/model_2.pt
         """
     )
 
-    parser.add_argument('--input', '-i', type=str, required=True, help='Path to input image or directory')
+    parser.add_argument('--input', '-i', type=str, required=False, help='Path to input image or directory')
     parser.add_argument('--output', '-o', type=str, default='output', help='Output directory (default: output)')
-    parser.add_argument('--conf', '-c', type=float, default=0.3, help='Confidence threshold (default: 0.3)')
+    parser.add_argument('--conf', '-c', type=float, default=None, help='Confidence threshold (default: 0.3)')
     parser.add_argument('--nms', '-n', type=float, default=0.5, help='NMS IoU threshold (default: 0.5)')
     parser.add_argument('--model', '-m', type=str, default=MODEL_PATH, help=f'Path to model checkpoint (default: {MODEL_PATH})')
     parser.add_argument('--no-vis', action='store_true', help='Skip saving visualizations')
@@ -1596,18 +1609,68 @@ Examples:
 
     args = parser.parse_args()
 
+    # ══════════════════════════════════════════════════════════════════════════
+    # INTERACTIVE MODE: Ask for input if not provided via command-line
+    # ══════════════════════════════════════════════════════════════════════════
+
+    print("\n" + "╔" + "═"*68 + "╗")
+    print("║" + " "*18 + "D-FINE STANDALONE INFERENCE" + " "*23 + "║")
+    print("║" + " "*14 + "Almond Defect Detection System" + " "*24 + "║")
+    print("╚" + "═"*68 + "╝\n")
+
+    # Ask for image path if not provided
+    if args.input is None:
+        print("📂 Please provide the path to your image or folder:")
+        print("   Examples:")
+        print("   - Single image: /Users/borde/Downloads/image.jpg")
+        print("   - Folder:       /Users/borde/Downloads/almond_images/")
+        print()
+        args.input = input("Enter path: ").strip()
+
+        if not args.input:
+            print("\n❌ Error: No input path provided. Exiting.")
+            sys.exit(1)
+
+    # Ask for confidence threshold if not provided
+    if args.conf is None:
+        print("\n🎯 Confidence threshold (0.0 to 1.0):")
+        print("   - Lower values (e.g., 0.1): More detections, may include false positives")
+        print("   - Higher values (e.g., 0.5): Fewer but more confident detections")
+        print("   - Recommended: 0.3")
+        print()
+        conf_input = input("Enter confidence threshold [default: 0.3]: ").strip()
+
+        if conf_input:
+            try:
+                args.conf = float(conf_input)
+                if not (0.0 <= args.conf <= 1.0):
+                    print("⚠️  Warning: Confidence should be between 0.0 and 1.0. Using default: 0.3")
+                    args.conf = 0.3
+            except ValueError:
+                print("⚠️  Warning: Invalid input. Using default confidence: 0.3")
+                args.conf = 0.3
+        else:
+            args.conf = 0.3
+
+    print("\n" + "─"*70)
+    print(f"📋 Configuration:")
+    print(f"   Model:       {args.model}")
+    print(f"   Input:       {args.input}")
+    print(f"   Output:      {args.output}")
+    print(f"   Confidence:  {args.conf}")
+    print(f"   NMS:         {args.nms}")
+    print("─"*70 + "\n")
+
     os.makedirs(os.path.join(args.output, VIS_DIR), exist_ok=True)
     os.makedirs(os.path.join(args.output, JSON_DIR), exist_ok=True)
 
-    print("\n" + "="*70)
-    print("D-FINE STANDALONE INFERENCE")
-    print("="*70)
-    print(f"Model: DFINE-{MODEL_NAME.upper()}")
-    print(f"Input Size: {INPUT_SIZE[0]}x{INPUT_SIZE[1]}")
-    print(f"Classes: {NUM_CLASSES}")
-    print("="*70 + "\n")
-
     device = select_device()
+
+    print(f"\n📊 Model Info:")
+    print(f"   Architecture: DFINE-{MODEL_NAME.upper()}")
+    print(f"   Input Size:   {INPUT_SIZE[0]}x{INPUT_SIZE[1]}")
+    print(f"   Classes:      {NUM_CLASSES}")
+    print()
 
     print("\n[Model] Building D-FINE model...")
     model = build_model(MODEL_NAME, NUM_CLASSES, device, INPUT_SIZE)
@@ -1623,15 +1686,15 @@ Examples:
         print(f"[Error] Input path not found: {args.input}")
         sys.exit(1)
 
-    print("\n" + "="*70)
-    print("INFERENCE COMPLETE")
-    print("="*70)
-    print(f"Outputs saved to: {args.output}")
+    print("\n" + "╔" + "═"*68 + "╗")
+    print("║" + " "*22 + "✅ INFERENCE COMPLETE" + " "*25 + "║")
+    print("╚" + "═"*68 + "╝\n")
+    print(f"📁 Outputs saved to: {args.output}")
     if not args.no_vis:
-        print(f"  Visualizations: {os.path.join(args.output, VIS_DIR)}")
+        print(f"   🖼️  Visualizations: {os.path.join(args.output, VIS_DIR)}")
     if not args.no_json:
-        print(f"  JSON files: {os.path.join(args.output, JSON_DIR)}")
-    print()
+        print(f"   📄 JSON files:      {os.path.join(args.output, JSON_DIR)}")
+    print("\n💡 Tip: Open visualize folder to see detection results!\n")
 
 
 if __name__ == '__main__':
