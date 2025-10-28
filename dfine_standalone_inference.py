@@ -1502,7 +1502,7 @@ def visualize_detections(image_path: str, boxes: np.ndarray, scores: np.ndarray,
         x1, y1, x2, y2 = box
         draw.rectangle([x1, y1, x2, y2], outline='red', width=3)
         class_name = CLASS_NAMES[int(label)] if int(label) < len(CLASS_NAMES) else f"Class_{int(label)}"
-        text = f"{class_name}: {score*100:.1f}%"
+        text = f"{class_name}: {score:.3f}"  # Show as decimal (0.0-1.0)
         try:
             bbox = draw.textbbox((x1, y1 - 20), text, font=font)
             draw.rectangle(bbox, fill='red')
@@ -1556,7 +1556,7 @@ def process_single_image(model, device, image_path: str, output_dir: str, confid
         print(f"\nDetections:")
         for i, (box, score, label) in enumerate(zip(boxes, scores, labels), 1):
             class_name = CLASS_NAMES[int(label)]
-            print(f"  {i}. {class_name}: {score*100:.1f}% at [{box[0]:.1f}, {box[1]:.1f}, {box[2]:.1f}, {box[3]:.1f}]")
+            print(f"  {i}. {class_name}: {score:.3f} at [{box[0]:.1f}, {box[1]:.1f}, {box[2]:.1f}, {box[3]:.1f}]")
 
 
 def process_directory(model, device, input_dir: str, output_dir: str, confidence_threshold: float, nms_threshold: float, save_vis: bool = True, save_json_out: bool = True):
@@ -1634,9 +1634,10 @@ Examples:
     # Ask for confidence threshold if not provided
     if args.conf is None:
         print("\n🎯 Confidence threshold (0.0 to 1.0):")
-        print("   - Lower values (e.g., 0.1): More detections, may include false positives")
-        print("   - Higher values (e.g., 0.5): Fewer but more confident detections")
-        print("   - Recommended: 0.3")
+        print("   - 0.1-0.2: Maximum detections (use if objects are missing)")
+        print("   - 0.3:     Balanced (recommended for most cases)")
+        print("   - 0.5+:    Only very confident detections")
+        print("\n   💡 Tip: If objects are not detected, try lower values like 0.1 or 0.15")
         print()
         conf_input = input("Enter confidence threshold [default: 0.3]: ").strip()
 
