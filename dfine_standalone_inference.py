@@ -1458,20 +1458,40 @@ def postprocess_outputs(outputs: Dict, original_size: Tuple[int, int], confidenc
     pred_logits = pred_logits[0]
     pred_boxes = pred_boxes[0]
 
-    # Apply softmax to get probabilities
-    scores = F.softmax(pred_logits, dim=-1)
+    # DIAGNOSTIC: Check actual model output shape
+    num_output_classes = pred_logits.shape[-1]
+    total_queries = pred_logits.shape[0]
 
-    # CRITICAL FIX: Exclude background class (last class at index NUM_CLASSES)
-    # DFINE outputs [num_queries, NUM_CLASSES + 1] where last class is background
-    # We only want to consider the actual defect classes (0 to NUM_CLASSES-1)
-    scores_foreground = scores[:, :NUM_CLASSES]  # Take only first 35 classes (indices 0-34)
-    max_scores, labels = scores_foreground.max(dim=-1)
-
-    # DIAGNOSTIC: Show raw model outputs
-    total_queries = len(pred_logits)
     if verbose:
-        print(f"[Diagnostic] Raw model outputs: {total_queries} queries from model")
-        print(f"[Diagnostic] Using {NUM_CLASSES} foreground classes (excluding background class)")
+        print(f"\n[Diagnostic] Model output shape: {pred_logits.shape}")
+        print(f"[Diagnostic] Detected {num_output_classes} output classes")
+        print(f"[Diagnostic] Expected: {NUM_CLASSES} classes or {NUM_CLASSES + 1} (with background)")
+
+    # Handle different output formats
+    if num_output_classes == NUM_CLASSES:
+        # Model outputs exactly NUM_CLASSES (no background class)
+        # Use sigmoid for independent per-class probabilities
+        if verbose:
+            print(f"[Diagnostic] Using SIGMOID (no background class)")
+        scores = torch.sigmoid(pred_logits)
+        max_scores, labels = scores.max(dim=-1)
+    elif num_output_classes == NUM_CLASSES + 1:
+        # Model outputs NUM_CLASSES + 1 (includes background class)
+        # Use softmax and exclude background
+        if verbose:
+            print(f"[Diagnostic] Using SOFTMAX with background exclusion")
+        scores = F.softmax(pred_logits, dim=-1)
+        scores_foreground = scores[:, :NUM_CLASSES]  # Exclude background at index NUM_CLASSES
+        max_scores, labels = scores_foreground.max(dim=-1)
+    else:
+        # Unexpected number of classes - use softmax as fallback
+        if verbose:
+            print(f"[Diagnostic] WARNING: Unexpected class count {num_output_classes}, using softmax")
+        scores = F.softmax(pred_logits, dim=-1)
+        max_scores, labels = scores.max(dim=-1)
+
+    if verbose:
+        print(f"[Diagnostic] Total detection queries: {total_queries}")
 
         # Show confidence score distribution BEFORE filtering
         sorted_scores, _ = torch.sort(max_scores, descending=True)
