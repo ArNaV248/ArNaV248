@@ -1449,32 +1449,25 @@ def select_device():
 
 
 def preprocess_image(image_path: str, target_size: Tuple[int, int] = INPUT_SIZE):
+    """
+    Preprocessing that matches the working script EXACTLY.
+    Working script uses: T.Resize((448, 1280)) + T.ToTensor()
+    """
     image = Image.open(image_path).convert('RGB')
     original_size = image.size
-    image_resized = image.resize(target_size, Image.BILINEAR)
 
-    # OPTION 1: No normalization (just convert to tensor)
-    # Use this if your working script doesn't normalize
-    transform = T.Compose([T.ToTensor()])
-    tensor = transform(image_resized).unsqueeze(0)
+    # Convert (width, height) to (height, width) for T.Resize
+    # INPUT_SIZE = (1280, 448) = (width, height)
+    # T.Resize expects (height, width) = (448, 1280)
+    resize_hw = (target_size[1], target_size[0])
 
-    # OPTION 2: With ImageNet normalization (commented out for now)
-    # Uncomment if your working script uses normalization
-    # transform = T.Compose([
-    #     T.ToTensor(),
-    #     T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    # ])
-    # tensor = transform(image_resized).unsqueeze(0)
+    transform = T.Compose([
+        T.Resize(resize_hw),  # (height=448, width=1280)
+        T.ToTensor()
+    ])
+    tensor = transform(image).unsqueeze(0)
 
-    # DIAGNOSTIC: Verify tensor range
-    tensor_min = tensor.min().item()
-    tensor_max = tensor.max().item()
-    tensor_mean = tensor.mean().item()
-
-    print(f"[Preprocessing] Image resized to {target_size}")
-    print(f"[Preprocessing] Tensor stats - min: {tensor_min:.3f}, max: {tensor_max:.3f}, mean: {tensor_mean:.3f}")
-    print(f"[Preprocessing] Range: [0, 1] = NO normalization, [-2, 2.5] = WITH normalization")
-
+    print(f"[Preprocessing] Using T.Resize({resize_hw}) + ToTensor() - matches working script")
     return tensor, image, original_size
 
 
@@ -1504,43 +1497,15 @@ def postprocess_outputs(outputs: Dict, original_size: Tuple[int, int], confidenc
     if verbose:
         print(f"\n[Diagnostic] Model output shape: {pred_logits.shape}")
         print(f"[Diagnostic] Detected {num_output_classes} output classes")
-        print(f"[Diagnostic] Expected: {NUM_CLASSES} classes or {NUM_CLASSES + 1} (with background)")
 
-        # Show raw logits statistics (before sigmoid/softmax)
-        logits_min = pred_logits.min().item()
-        logits_max = pred_logits.max().item()
-        logits_mean = pred_logits.mean().item()
-        print(f"[Diagnostic] Raw logits - min: {logits_min:.3f}, max: {logits_max:.3f}, mean: {logits_mean:.3f}")
-
-        # Show top 5 raw logit values
-        flat_logits = pred_logits.flatten()
-        top_5_logits, _ = torch.topk(flat_logits, 5)
-        print(f"[Diagnostic] Top 5 raw logits (before activation): {top_5_logits.cpu().numpy()}")
-
-    # Handle different output formats
-    if num_output_classes == NUM_CLASSES:
-        # Model outputs exactly NUM_CLASSES (no background class)
-        # Use sigmoid for independent per-class probabilities
-        if verbose:
-            print(f"[Diagnostic] Using SIGMOID (no background class)")
-        scores = torch.sigmoid(pred_logits)
-        max_scores, labels = scores.max(dim=-1)
-    elif num_output_classes == NUM_CLASSES + 1:
-        # Model outputs NUM_CLASSES + 1 (includes background class)
-        # Use softmax and exclude background
-        if verbose:
-            print(f"[Diagnostic] Using SOFTMAX with background exclusion")
-        scores = F.softmax(pred_logits, dim=-1)
-        scores_foreground = scores[:, :NUM_CLASSES]  # Exclude background at index NUM_CLASSES
-        max_scores, labels = scores_foreground.max(dim=-1)
-    else:
-        # Unexpected number of classes - use softmax as fallback
-        if verbose:
-            print(f"[Diagnostic] WARNING: Unexpected class count {num_output_classes}, using softmax")
-        scores = F.softmax(pred_logits, dim=-1)
-        max_scores, labels = scores.max(dim=-1)
+    # EXACT MATCH TO WORKING SCRIPT:
+    # Convert logits to probabilities using softmax
+    # Take max across ALL classes (doesn't exclude background)
+    probs = F.softmax(pred_logits, dim=-1)
+    max_scores, labels = probs.max(dim=-1)
 
     if verbose:
+        print(f"[Diagnostic] Using SOFTMAX on all classes (matches working script)")
         print(f"[Diagnostic] Total detection queries: {total_queries}")
 
         # Show confidence score distribution BEFORE filtering
