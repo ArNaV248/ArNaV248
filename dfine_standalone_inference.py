@@ -1461,7 +1461,15 @@ def preprocess_image(image_path: str, target_size: Tuple[int, int] = INPUT_SIZE)
     ])
     tensor = transform(image_resized).unsqueeze(0)
 
+    # DIAGNOSTIC: Verify normalization was applied correctly
+    tensor_min = tensor.min().item()
+    tensor_max = tensor.max().item()
+    tensor_mean = tensor.mean().item()
+
     print(f"[Preprocessing] Image resized to {target_size}, normalized with ImageNet mean/std")
+    print(f"[Preprocessing] Tensor stats - min: {tensor_min:.3f}, max: {tensor_max:.3f}, mean: {tensor_mean:.3f}")
+    print(f"[Preprocessing] Expected range: ~[-2.0, 2.5] if normalized correctly")
+
     return tensor, image, original_size
 
 
@@ -1472,7 +1480,7 @@ def run_inference(model, image_tensor, device):
     return outputs
 
 
-def postprocess_outputs(outputs: Dict, original_size: Tuple[int, int], confidence_threshold: float = 0.3, nms_threshold: float = 0.5, verbose: bool = True):
+def postprocess_outputs(outputs: Dict, original_size: Tuple[int, int], confidence_threshold: float = 0.3, nms_threshold: float = 0.3, verbose: bool = True):
     pred_logits = outputs['pred_logits']
     pred_boxes = outputs['pred_boxes']
 
@@ -1492,6 +1500,17 @@ def postprocess_outputs(outputs: Dict, original_size: Tuple[int, int], confidenc
         print(f"\n[Diagnostic] Model output shape: {pred_logits.shape}")
         print(f"[Diagnostic] Detected {num_output_classes} output classes")
         print(f"[Diagnostic] Expected: {NUM_CLASSES} classes or {NUM_CLASSES + 1} (with background)")
+
+        # Show raw logits statistics (before sigmoid/softmax)
+        logits_min = pred_logits.min().item()
+        logits_max = pred_logits.max().item()
+        logits_mean = pred_logits.mean().item()
+        print(f"[Diagnostic] Raw logits - min: {logits_min:.3f}, max: {logits_max:.3f}, mean: {logits_mean:.3f}")
+
+        # Show top 5 raw logit values
+        flat_logits = pred_logits.flatten()
+        top_5_logits, _ = torch.topk(flat_logits, 5)
+        print(f"[Diagnostic] Top 5 raw logits (before activation): {top_5_logits.cpu().numpy()}")
 
     # Handle different output formats
     if num_output_classes == NUM_CLASSES:
@@ -1737,7 +1756,7 @@ Examples:
     parser.add_argument('--input', '-i', type=str, required=False, help='Path to input image or directory')
     parser.add_argument('--output', '-o', type=str, default='output', help='Output directory (default: output)')
     parser.add_argument('--conf', '-c', type=float, default=None, help='Confidence threshold (default: 0.3)')
-    parser.add_argument('--nms', '-n', type=float, default=0.5, help='NMS IoU threshold (default: 0.5)')
+    parser.add_argument('--nms', '-n', type=float, default=0.3, help='NMS IoU threshold (default: 0.3, lower = keep more boxes)')
     parser.add_argument('--model', '-m', type=str, default=MODEL_PATH, help=f'Path to model checkpoint (default: {MODEL_PATH})')
     parser.add_argument('--no-vis', action='store_true', help='Skip saving visualizations')
     parser.add_argument('--no-json', action='store_true', help='Skip saving JSON outputs')
