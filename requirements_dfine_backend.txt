@@ -1,0 +1,20 @@
+# D-FINE Label Studio ML Backend Requirements
+
+# Core ML Framework
+torch>=1.13.0
+torchvision>=0.14.0
+
+# Label Studio ML Backend
+label-studio-ml>=1.0.9
+
+# Image Processing
+Pillow>=9.0.0
+
+# AWS S3 Integration
+boto3>=1.26.0
+
+# Numerical Operations
+numpy>=1.21.0
+
+# Optional: For better logging
+coloredlogs>=15.0
