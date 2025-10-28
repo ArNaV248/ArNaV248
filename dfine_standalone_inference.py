@@ -1458,13 +1458,20 @@ def postprocess_outputs(outputs: Dict, original_size: Tuple[int, int], confidenc
     pred_logits = pred_logits[0]
     pred_boxes = pred_boxes[0]
 
+    # Apply softmax to get probabilities
     scores = F.softmax(pred_logits, dim=-1)
-    max_scores, labels = scores.max(dim=-1)
+
+    # CRITICAL FIX: Exclude background class (last class at index NUM_CLASSES)
+    # DFINE outputs [num_queries, NUM_CLASSES + 1] where last class is background
+    # We only want to consider the actual defect classes (0 to NUM_CLASSES-1)
+    scores_foreground = scores[:, :NUM_CLASSES]  # Take only first 35 classes (indices 0-34)
+    max_scores, labels = scores_foreground.max(dim=-1)
 
     # DIAGNOSTIC: Show raw model outputs
     total_queries = len(pred_logits)
     if verbose:
         print(f"[Diagnostic] Raw model outputs: {total_queries} queries from model")
+        print(f"[Diagnostic] Using {NUM_CLASSES} foreground classes (excluding background class)")
 
     keep_mask = max_scores > confidence_threshold
     num_after_conf = keep_mask.sum().item()
