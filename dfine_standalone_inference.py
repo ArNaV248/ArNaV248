@@ -1473,11 +1473,35 @@ def postprocess_outputs(outputs: Dict, original_size: Tuple[int, int], confidenc
         print(f"[Diagnostic] Raw model outputs: {total_queries} queries from model")
         print(f"[Diagnostic] Using {NUM_CLASSES} foreground classes (excluding background class)")
 
+        # Show confidence score distribution BEFORE filtering
+        sorted_scores, _ = torch.sort(max_scores, descending=True)
+        top_scores = sorted_scores[:50].cpu().numpy()  # Top 50 scores
+
+        # Count scores in different ranges
+        ranges = [
+            (0.8, 1.0, "0.80-1.00 (Very High)"),
+            (0.5, 0.8, "0.50-0.80 (High)"),
+            (0.3, 0.5, "0.30-0.50 (Medium)"),
+            (0.15, 0.3, "0.15-0.30 (Low)"),
+            (0.05, 0.15, "0.05-0.15 (Very Low)"),
+            (0.0, 0.05, "0.00-0.05 (Noise)")
+        ]
+
+        print(f"\n[Diagnostic] Confidence score distribution (before filtering):")
+        for low, high, label in ranges:
+            count = ((max_scores >= low) & (max_scores < high)).sum().item()
+            if count > 0:
+                print(f"             {label}: {count} detections")
+
+        print(f"\n[Diagnostic] Top 10 confidence scores: {top_scores[:10]}")
+        print(f"[Diagnostic] Your threshold: {confidence_threshold:.2f}")
+
     keep_mask = max_scores > confidence_threshold
     num_after_conf = keep_mask.sum().item()
 
     if verbose:
-        print(f"[Diagnostic] After confidence filter (>= {confidence_threshold:.2f}): {num_after_conf} detections")
+        num_filtered_out = len(max_scores) - num_after_conf
+        print(f"\n[Diagnostic] After confidence filter (>= {confidence_threshold:.2f}): {num_after_conf} detections kept, {num_filtered_out} filtered out")
 
     if keep_mask.sum() == 0:
         return np.array([]), np.array([]), np.array([])
