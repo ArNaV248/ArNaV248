@@ -1,0 +1,15 @@
+# Testing Framework
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-mock>=3.10.0
+
+# API Testing
+requests-mock>=1.9.3
+
+# Code Quality
+black>=22.0.0
+flake8>=5.0.0
+mypy>=0.990
+
+# Test Utilities
+faker>=15.0.0

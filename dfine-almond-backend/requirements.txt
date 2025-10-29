@@ -1,0 +1,14 @@
+# Include base requirements
+-r requirements-base.txt
+
+# Production Server
+gunicorn>=20.1.0
+
+# Monitoring (optional)
+prometheus-client>=0.15.0
+
+# Logging
+coloredlogs>=15.0
+
+# Environment Management
+python-dotenv>=0.21.0
