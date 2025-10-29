@@ -49,18 +49,16 @@ dfine-almond-backend/
 ### Prerequisites
 
 - Docker with GPU support (nvidia-docker2)
-- Model file: `model_2.pt` (~150-200 MB)
+- Model file: `best.pt` (~150-200 MB)
 - AWS credentials (for S3 access)
 - Label Studio running
 
 ### 1. Prepare Model File
 
 ```bash
-# Create models directory
-mkdir -p dfine-almond-backend/models
-
-# Copy your trained model
-cp /path/to/model_2.pt dfine-almond-backend/models/
+# Place your trained model in the same directory as docker-compose.yml
+# The model file should be at: dfine-almond-backend/best.pt
+cp /path/to/best.pt dfine-almond-backend/best.pt
 ```
 
 ### 2. Configure Environment
@@ -123,10 +121,10 @@ docker run -d \
   --name dfine-backend \
   --gpus all \
   -p 9091:9091 \
-  -v $(pwd)/models:/app/models:ro \
+  -v $(pwd)/best.pt:/app/best.pt:ro \
   -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
   -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
-  -e MODEL_PATH=/app/models/model_2.pt \
+  -e MODEL_PATH=/app/best.pt \
   --restart unless-stopped \
   dfine-almond-backend
 
@@ -205,7 +203,7 @@ curl -X POST http://localhost:9091/predict \
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `MODEL_PATH` | Path to model_2.pt | `/app/models/model_2.pt` |
+| `MODEL_PATH` | Path to best.pt | `/app/best.pt` |
 | `LABEL_STUDIO_URL` | Label Studio server URL | `http://label-studio:8080` |
 | `LABEL_STUDIO_API_KEY` | API key | Required |
 | `AWS_ACCESS_KEY_ID` | AWS access key | Required |
@@ -249,7 +247,7 @@ docker logs dfine-backend
 
 # Common issues:
 # 1. Model file not found
-ls dfine-almond-backend/models/model_2.pt
+ls dfine-almond-backend/best.pt
 
 # 2. GPU not available
 docker run --rm --gpus all nvidia/cuda:11.8.0-base-ubuntu22.04 nvidia-smi
@@ -362,7 +360,7 @@ This Docker structure differs from the parent directory:
 
 Before deploying:
 
-- [ ] Model file exists in `models/model_2.pt`
+- [ ] Model file exists as `best.pt` in the same directory
 - [ ] AWS credentials configured in `.env`
 - [ ] Docker with GPU support installed
 - [ ] Port 9091 available
@@ -389,7 +387,7 @@ Before deploying:
 
 ```bash
 # 1. Prepare
-mkdir -p models && cp /path/to/model_2.pt models/
+cp /path/to/best.pt ./best.pt
 
 # 2. Configure
 cat > .env <<EOF

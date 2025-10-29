@@ -53,7 +53,7 @@ LABEL_STUDIO_URL = 'http://127.0.0.1:8080/'
 LABEL_STUDIO_API_KEY = '100926765214fd262cf9243b620e2ec72c9219ad'
 
 # Model Configuration
-MODEL_PATH = os.getenv('MODEL_PATH', "/app/models/model_2.pt")  # Docker path, override with env var
+MODEL_PATH = os.getenv('MODEL_PATH', "/app/best.pt")  # Docker path, override with env var
 MODEL_NAME = "l"  # DFINE-Large
 INPUT_SIZE = (1280, 448)  # width, height
 NUM_CLASSES = 35
