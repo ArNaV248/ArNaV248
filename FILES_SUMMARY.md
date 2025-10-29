@@ -9,11 +9,14 @@ This directory contains everything you need to integrate your D-FINE model with 
 ```
 ArNaV248/
 ├── dfine_labelstudio_backend.py       # ⭐ Main backend script (2000 lines)
-├── requirements_dfine_backend.txt     # 📦 Python dependencies
-├── README_DFINE_LABELSTUDIO.md        # 📖 Full documentation
-├── QUICKSTART_DFINE.md                # 🚀 5-minute quick start guide
-├── COMPARISON_YOLO_VS_DFINE.md        # 🔍 YOLOv5 vs D-FINE comparison
+├── setup_and_test.sh                  # 🚀 Automated setup & test (RUN THIS FIRST!)
 ├── test_dfine_backend_local.py        # 🧪 Local testing script
+├── requirements_dfine_backend.txt     # 📦 Python dependencies
+├── WORKFLOW_ARCHITECTURE.md           # 🔄 Complete workflow & folder structure
+├── TEST_INSTRUCTIONS.md               # 📋 Detailed testing guide
+├── QUICKSTART_DFINE.md                # ⚡ 5-minute quick start guide
+├── README_DFINE_LABELSTUDIO.md        # 📖 Full documentation
+├── COMPARISON_YOLO_VS_DFINE.md        # 🔍 YOLOv5 vs D-FINE comparison
 └── FILES_SUMMARY.md                   # 📚 This file
 ```
 
@@ -24,9 +27,18 @@ ArNaV248/
 ### If you want to...
 
 **Get started ASAP (5 minutes):**
+→ Run `./setup_and_test.sh` (automated setup & test)
+
+**Understand the workflow & folder structure:**
+→ Read `WORKFLOW_ARCHITECTURE.md` ⭐ NEW!
+
+**Quick start guide:**
 → Read `QUICKSTART_DFINE.md`
 
-**Understand how it works:**
+**Detailed testing instructions:**
+→ Read `TEST_INSTRUCTIONS.md`
+
+**Full documentation:**
 → Read `README_DFINE_LABELSTUDIO.md`
 
 **Compare with YOLOv5 backend:**
