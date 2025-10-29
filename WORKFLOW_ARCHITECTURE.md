@@ -2,6 +2,53 @@
 
 Detailed workflow showing all folders, components, and data flow.
 
+**⚠️ IMPORTANT:** This guide assumes you're **adding** D-FINE to an **existing** Label Studio setup!
+
+---
+
+## 🎯 **Deployment Scenario**
+
+### **What You Already Have:**
+- ✅ Label Studio running (for walnut detection)
+- ✅ YOLOv5 ML backend on port 9090 (for walnuts)
+- ✅ S3 buckets with walnut images
+
+### **What You're Adding:**
+- ⭐ D-FINE ML backend on port 9091 (for almonds) ← **This repo!**
+- ⭐ New almond detection project in Label Studio
+- ⭐ S3 bucket/folder with almond images
+
+### **Result:**
+- 🎉 **One Label Studio instance** serving **two projects** with **two different ML backends**
+- 🎉 Walnut detection continues to work (YOLOv5)
+- 🎉 Almond detection now available (D-FINE)
+
+**📖 For detailed deployment steps, see: `MULTI_BACKEND_DEPLOYMENT.md`**
+
+---
+
+## 🏗️ **Your Complete System (Existing + New)**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│          MULTI-BACKEND ARCHITECTURE (Walnuts + Almonds)            │
+└─────────────────────────────────────────────────────────────────────┘
+
+                    Label Studio Server
+                    http://localhost:8080
+                    (EXISTING - Already running)
+                            │
+                            │
+            ┌───────────────┼───────────────┐
+            │               │               │
+            ▼               ▼               ▼
+
+    YOLOv5 Backend    D-FINE Backend    (Future)
+    Port: 9090        Port: 9091 ⭐     Port: 9092
+    (Walnuts)         (Almonds-NEW)     (Optional)
+    EXISTING          THIS REPO
+```
+
 ---
 
 ## 📂 **Directory Structure & Roles**
@@ -11,25 +58,37 @@ Detailed workflow showing all folders, components, and data flow.
 │                    COMPLETE SYSTEM ARCHITECTURE                     │
 └─────────────────────────────────────────────────────────────────────┘
 
-📁 /home/user/ArNaV248/              ← Your D-FINE backend directory
-├── dfine_labelstudio_backend.py     ── ML Backend script (runs inference)
+📁 /home/user/walnut_detection/      ← EXISTING (YOLOv5 backend)
+├── yolov5/                          ── YOLOv5 repository
+├── yolo_labelstudio_backend.py      ── YOLOv5 ML backend
+└── best.pt                          ── YOLOv5 model weights
+
+📁 /home/user/ArNaV248/              ← NEW (D-FINE backend - This repo!)
+├── dfine_labelstudio_backend.py     ── D-FINE ML Backend (port 9091)
 ├── setup_and_test.sh                ── Automated setup
 ├── test_dfine_backend_local.py      ── Local testing (no S3)
 ├── requirements_dfine_backend.txt   ── Python dependencies
 └── model_2.pt                       ── D-FINE model weights (150-200 MB)
 
-📁 ~/.local/share/label-studio/      ← Label Studio data directory
-├── media/                           ── Temporary image cache
+📁 ~/.local/share/label-studio/      ← SHARED by all backends
+├── media/                           ── Temporary image cache (both projects)
 ├── logs/                            ── Label Studio logs
-└── label_studio.sqlite3             ── Database (tasks, annotations)
+└── label_studio.sqlite3             ── Database (all tasks & annotations)
 
-📁 S3 Bucket (AWS)                   ← Image storage
-└── s3://your-bucket/
-    ├── almonds/                     ── Raw images folder
-    │   ├── image001.jpg
-    │   ├── image002.jpg
-    │   └── ...
-    └── processed/                   ── (Optional) Processed images
+📁 S3 Buckets (AWS)                  ← Image storage
+└── s3://your-company-bucket/
+    ├── walnuts/                     ── Walnut images (YOLOv5 backend)
+    │   ├── batch_001/
+    │   │   ├── walnut_001.jpg
+    │   │   └── walnut_002.jpg
+    │   └── batch_002/
+    │
+    └── almonds/                     ── Almond images (D-FINE backend) ⭐
+        ├── batch_001/
+        │   ├── almond_001.jpg
+        │   ├── almond_002.jpg
+        │   └── ...
+        └── batch_002/
 
 📁 Label Studio UI (Browser)         ← Web interface
 └── http://localhost:8080

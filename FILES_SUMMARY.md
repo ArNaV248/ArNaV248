@@ -12,6 +12,7 @@ ArNaV248/
 ├── setup_and_test.sh                  # 🚀 Automated setup & test (RUN THIS FIRST!)
 ├── test_dfine_backend_local.py        # 🧪 Local testing script
 ├── requirements_dfine_backend.txt     # 📦 Python dependencies
+├── MULTI_BACKEND_DEPLOYMENT.md        # 🏗️ Deploy alongside existing YOLOv5 (⭐ START HERE!)
 ├── WORKFLOW_ARCHITECTURE.md           # 🔄 Complete workflow & folder structure
 ├── TEST_INSTRUCTIONS.md               # 📋 Detailed testing guide
 ├── QUICKSTART_DFINE.md                # ⚡ 5-minute quick start guide
@@ -26,11 +27,17 @@ ArNaV248/
 
 ### If you want to...
 
-**Get started ASAP (5 minutes):**
+**Deploy to existing Label Studio (with YOLOv5):**
+→ Read `MULTI_BACKEND_DEPLOYMENT.md` ⭐ **START HERE!**
+
+**Get started ASAP (test locally first):**
 → Run `./setup_and_test.sh` (automated setup & test)
 
 **Understand the workflow & folder structure:**
-→ Read `WORKFLOW_ARCHITECTURE.md` ⭐ NEW!
+→ Read `WORKFLOW_ARCHITECTURE.md`
+
+**Detailed deployment guide:**
+→ Read `MULTI_BACKEND_DEPLOYMENT.md` (Docker, systemd, multi-backend)
 
 **Quick start guide:**
 → Read `QUICKSTART_DFINE.md`
