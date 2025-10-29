@@ -1,5 +1,47 @@
+# D-FINE Standalone Inference - Requirements
+# Minimum Python Version: 3.8+
+
+# Core Deep Learning (Required)
 torch>=2.0.0
 torchvision>=0.15.0
+
+# Image Processing (Required)
 Pillow>=9.0.0
+
+# Numerical Computing (Required)
 numpy>=1.21.0
-matplotlib>=3.5.0
+
+# ============================================================================
+# GPU SUPPORT (Optional but Recommended for Speed)
+# ============================================================================
+
+# For NVIDIA GPU (CUDA):
+# Uninstall CPU version first: pip uninstall torch torchvision
+# Then install CUDA version from: https://pytorch.org/get-started/locally/
+#
+# Example for CUDA 11.8:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+#
+# Example for CUDA 12.1:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+
+# For Mac with Apple Silicon (M1/M2/M3):
+# PyTorch with MPS (Metal Performance Shaders) support is included in torch>=2.0.0
+# No additional installation needed - MPS acceleration works automatically
+
+# ============================================================================
+# INSTALLATION INSTRUCTIONS
+# ============================================================================
+
+# Standard installation (CPU only):
+#   pip install -r requirements.txt
+
+# Check if GPU is available after installation:
+#   python -c "import torch; print('CUDA:', torch.cuda.is_available()); print('MPS:', torch.backends.mps.is_available())"
+
+# ============================================================================
+# NOTES
+# ============================================================================
+# - All other dependencies (json, os, sys, argparse, pathlib) are Python standard library
+# - The script automatically detects and uses GPU if available
+# - CPU fallback is automatic if no GPU detected
