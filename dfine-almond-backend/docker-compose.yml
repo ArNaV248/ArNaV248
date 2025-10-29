@@ -3,8 +3,8 @@ version: '3.8'
 services:
   dfine-backend:
     build:
-      context: ..
-      dockerfile: dfine-almond-backend/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     container_name: dfine-almond-backend
 
     ports:

@@ -33,7 +33,7 @@ dfine-almond-backend/
 ├── Dockerfile              # Docker image definition
 ├── .dockerignore           # Files to exclude from image
 ├── docker-compose.yml      # Docker Compose configuration
-├── model.py                # Main ML backend (imports from parent)
+├── model.py                # Main ML backend (full D-FINE code embedded)
 ├── _wsgi.py                # WSGI entry point
 ├── README.md               # This file
 ├── requirements-base.txt   # Core dependencies
@@ -109,9 +109,9 @@ curl http://localhost:9091/health
 ```bash
 # Build from dfine-almond-backend directory
 cd dfine-almond-backend
-docker build -t dfine-almond-backend ..
+docker build -t dfine-almond-backend .
 
-# Or build with docker-compose
+# Or build with docker-compose (recommended)
 docker-compose build
 ```
 
@@ -350,7 +350,7 @@ This Docker structure differs from the parent directory:
 | Aspect | Parent Directory | This Directory |
 |--------|------------------|----------------|
 | **Deployment** | Manual setup | Docker container |
-| **Model** | Full code embedded | Imports from parent |
+| **Model** | Full code embedded | Full code embedded |
 | **Structure** | Single file | Modular structure |
 | **Production** | Development | Production-ready |
 | **Dependencies** | requirements.txt | Multi-stage requirements |

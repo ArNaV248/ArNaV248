@@ -15,13 +15,6 @@ Note:
 """
 
 import os
-import sys
-from pathlib import Path
-
-# Ensure parent directory is in path
-parent_dir = Path(__file__).parent.parent
-if str(parent_dir) not in sys.path:
-    sys.path.insert(0, str(parent_dir))
 
 # Import the Label Studio ML backend framework
 from label_studio_ml.api import init_app
