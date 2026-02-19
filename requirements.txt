@@ -1,4 +1,4 @@
-# D-FINE Standalone Inference - Requirements
+# D-FINE Label Studio ML Backend (cdfine-almond-backend) - Requirements
 # Minimum Python Version: 3.8+
 
 # Core Deep Learning (Required)
@@ -10,6 +10,12 @@ Pillow>=9.0.0
 
 # Numerical Computing (Required)
 numpy>=1.21.0
+
+# AWS S3 Access (Required - for loading images from S3)
+boto3>=1.26.0
+
+# Label Studio ML SDK (Required - ML backend framework)
+label-studio-ml>=1.0.9
 
 # Visualization (Used in object_detection_pipeline.py)
 matplotlib>=3.5.0
@@ -45,6 +51,7 @@ matplotlib>=3.5.0
 # ============================================================================
 # NOTES
 # ============================================================================
-# - All other dependencies (json, os, sys, argparse, pathlib) are Python standard library
+# - All other dependencies (json, os, sys, argparse, pathlib, base64, io,
+#   urllib, re, math, copy, functools, collections, logging, time) are Python standard library
 # - The script automatically detects and uses GPU if available
 # - CPU fallback is automatic if no GPU detected
